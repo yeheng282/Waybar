@@ -510,12 +510,15 @@ auto Workspace::handle_clicked(GdkEventButton *bt) -> bool {
 
   if (action.empty())
     return true;
-  else if (action == "activate") {
-    zext_workspace_handle_v1_activate(workspace_handle_);
-  } else if (action == "close") {
-    zext_workspace_handle_v1_remove(workspace_handle_);
-  } else {
-    spdlog::warn("Unknown action {}", action);
+
+  std::string command = "";
+  if (action == "activate") {
+    command = "hyprctl dispatch workspace " + name_; 
+  } else if (action == "new"){
+    command = "hyprctl dispatch workspace empty";
+  }
+  if (!command.empty()) {
+    system(command.c_str());
   }
 
   workspace_group_.commit();

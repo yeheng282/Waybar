@@ -257,35 +257,35 @@ const std::vector<std::string> waybar::modules::Pulseaudio::getPulseIcon() const
 auto waybar::modules::Pulseaudio::update() -> void {
   auto format = format_;
   std::string tooltip_format;
-  if (!alt_) {
-    std::string format_name = "format";
-    if (monitor_.find("a2dp_sink") != std::string::npos ||  // PulseAudio
-        monitor_.find("a2dp-sink") != std::string::npos ||  // PipeWire
-        monitor_.find("bluez") != std::string::npos) {
-      format_name = format_name + "-bluetooth";
-      label_.get_style_context()->add_class("bluetooth");
-    } else {
-      label_.get_style_context()->remove_class("bluetooth");
-    }
-    if (muted_) {
-      // Check muted bluetooth format exist, otherwise fallback to default muted format
-      if (format_name != "format" && !config_[format_name + "-muted"].isString()) {
-        format_name = "format";
-      }
-      format_name = format_name + "-muted";
-      label_.get_style_context()->add_class("muted");
-      label_.get_style_context()->add_class("sink-muted");
-    } else {
-      label_.get_style_context()->remove_class("muted");
-      label_.get_style_context()->remove_class("sink-muted");
-    }
-    auto state = getState(volume_, true);
-    if (!state.empty() && config_[format_name + "-" + state].isString()) {
-      format = config_[format_name + "-" + state].asString();
-    } else if (config_[format_name].isString()) {
-      format = config_[format_name].asString();
-    }
+  std::string format_name = "format";
+  if (monitor_.find("a2dp_sink") != std::string::npos ||  // PulseAudio
+      monitor_.find("a2dp-sink") != std::string::npos ||  // PipeWire
+      monitor_.find("bluez") != std::string::npos) {
+    format_name = format_name + "-bluetooth";
+    label_.get_style_context()->add_class("bluetooth");
+  } else {
+    label_.get_style_context()->remove_class("bluetooth");
+  }  
+  auto state = getState(volume_, true);
+  if (!state.empty() && config_[format_name + "-" + state].isString()) {
+    format_name = format_name + "-" + state;
   }
+  if (muted_) {
+      // Check muted bluetooth format exist, otherwise fallback to default muted format
+    if (format_name != "format" && !config_[format_name + "-muted"].isString()) {
+      format_name = "format";
+    }
+    format_name = format_name + "-muted";
+    label_.get_style_context()->add_class("muted");
+    label_.get_style_context()->add_class("sink-muted");
+  } else {
+    label_.get_style_context()->remove_class("muted");
+    label_.get_style_context()->remove_class("sink-muted");
+  }
+  if (muted_ || !alt_) {
+    format = config_[format_name].isString() ? config_[format_name].asString() : format;
+  }
+
   // TODO: find a better way to split source/sink
   std::string format_source = "{volume}%";
   if (source_muted_) {
@@ -312,7 +312,10 @@ auto waybar::modules::Pulseaudio::update() -> void {
   }
 
   if (tooltipEnabled()) {
-    if (tooltip_format.empty() && config_["tooltip-format"].isString()) {
+    if (muted_) {
+      tooltip_format = format;
+    }
+    else if (tooltip_format.empty() && config_["tooltip-format"].isString()) {
       tooltip_format = config_["tooltip-format"].asString();
     }
     if (!tooltip_format.empty()) {
