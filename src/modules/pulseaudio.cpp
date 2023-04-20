@@ -257,35 +257,31 @@ const std::vector<std::string> waybar::modules::Pulseaudio::getPulseIcon() const
 auto waybar::modules::Pulseaudio::update() -> void {
   auto format = format_;
   std::string tooltip_format;
-  if (!alt_) {
-    std::string format_name = "format";
+  std::string format_name = "format";
+  label_.get_style_context()->remove_class("muted");
+  label_.get_style_context()->remove_class("sink-muted");
+  label_.get_style_context()->remove_class("bluetooth");
+  if (muted_) {
+    label_.get_style_context()->add_class("muted");
+    label_.get_style_context()->add_class("sink-muted");
+    if (format_name != "format" && !config_[format_name + "-muted"].isString()) {
+      format_name = "format";
+    }
+    format = config_[format_name + "-muted"].asString();  
+  } else if (!alt_) {
     if (monitor_.find("a2dp_sink") != std::string::npos ||  // PulseAudio
         monitor_.find("a2dp-sink") != std::string::npos ||  // PipeWire
         monitor_.find("bluez") != std::string::npos) {
       format_name = format_name + "-bluetooth";
       label_.get_style_context()->add_class("bluetooth");
-    } else {
-      label_.get_style_context()->remove_class("bluetooth");
-    }
-    if (muted_) {
-      // Check muted bluetooth format exist, otherwise fallback to default muted format
-      if (format_name != "format" && !config_[format_name + "-muted"].isString()) {
-        format_name = "format";
-      }
-      format_name = format_name + "-muted";
-      label_.get_style_context()->add_class("muted");
-      label_.get_style_context()->add_class("sink-muted");
-    } else {
-      label_.get_style_context()->remove_class("muted");
-      label_.get_style_context()->remove_class("sink-muted");
-    }
+    } 
     auto state = getState(volume_, true);
     if (!state.empty() && config_[format_name + "-" + state].isString()) {
-      format = config_[format_name + "-" + state].asString();
-    } else if (config_[format_name].isString()) {
-      format = config_[format_name].asString();
+      format_name = format_name + "-" + state;
     }
+    format = config_[format_name].asString();
   }
+
   // TODO: find a better way to split source/sink
   std::string format_source = "{volume}%";
   if (source_muted_) {
@@ -300,29 +296,34 @@ auto waybar::modules::Pulseaudio::update() -> void {
     }
   }
   format_source = fmt::format(fmt::runtime(format_source), fmt::arg("volume", source_volume_));
+
   auto text = fmt::format(
       fmt::runtime(format), fmt::arg("desc", desc_), fmt::arg("volume", volume_),
       fmt::arg("format_source", format_source), fmt::arg("source_volume", source_volume_),
-      fmt::arg("source_desc", source_desc_), fmt::arg("icon", getIcon(volume_, getPulseIcon())));
+      fmt::arg("source_desc", source_desc_), fmt::arg("icon", getIcon(volume_, getPulseIcon()))); 
   if (text.empty()) {
     label_.hide();
-  } else {
-    label_.set_markup(text);
-    label_.show();
+    return;
   }
 
+  label_.set_markup(text);
+  label_.show();
   if (tooltipEnabled()) {
-    if (tooltip_format.empty() && config_["tooltip-format"].isString()) {
-      tooltip_format = config_["tooltip-format"].asString();
-    }
-    if (!tooltip_format.empty()) {
-      label_.set_tooltip_text(fmt::format(
-          fmt::runtime(tooltip_format), fmt::arg("desc", desc_), fmt::arg("volume", volume_),
-          fmt::arg("format_source", format_source), fmt::arg("source_volume", source_volume_),
-          fmt::arg("source_desc", source_desc_),
-          fmt::arg("icon", getIcon(volume_, getPulseIcon()))));
+    if (muted_){
+      label_.set_tooltip_text(text);
     } else {
-      label_.set_tooltip_text(desc_);
+      if (tooltip_format.empty() && config_["tooltip-format"].isString()) {
+        tooltip_format = config_["tooltip-format"].asString();
+      }
+      if (!tooltip_format.empty()) {
+        label_.set_tooltip_text(fmt::format(
+            fmt::runtime(tooltip_format), fmt::arg("desc", desc_), fmt::arg("volume", volume_),
+            fmt::arg("format_source", format_source), fmt::arg("source_volume", source_volume_),
+            fmt::arg("source_desc", source_desc_),
+            fmt::arg("icon", getIcon(volume_, getPulseIcon()))));
+      } else {
+        label_.set_tooltip_text(desc_);
+      }
     }
   }
 
