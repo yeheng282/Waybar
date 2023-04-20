@@ -341,13 +341,9 @@ if get_option('experimental')
     add_project_arguments('-DUSE_EXPERIMENTAL', language: 'cpp')
 endif
 
-cava = compiler.find_library('cava',
-                             required: get_option('cava'))
-if not cava.found() and not get_option('cava').disabled()
-   cava = dependency('cava',
-                     required: false,
-                     fallback: [ 'cava', 'cava_dep' ])
-endif
+cava = dependency('cava',
+		required: false,
+		fallback: [ 'cava', 'cava_dep' ])
 
 if cava.found()
    add_project_arguments('-DHAVE_LIBCAVA', language: 'cpp')
