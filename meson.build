@@ -343,12 +343,19 @@ endif
 
 cava = dependency('cava',
 <<<<<<< HEAD
+<<<<<<< HEAD
                   required: false,
                   fallback: [ 'cava', 'cava_dep' ])
 =======
 		required: false,
 		fallback: [ 'cava', 'cava_dep' ])
 >>>>>>> ddd0dbf2d6199530dc66f8c52166f374dbd6ed61
+=======
+                  version : '>=0.8.4',
+                  required: get_option('cava'),
+                  fallback : ['cava', 'cava_dep'],
+                  not_found_message: 'cava is not found. Building waybar without cava')
+>>>>>>> master
 
 if cava.found()
    add_project_arguments('-DHAVE_LIBCAVA', language: 'cpp')
